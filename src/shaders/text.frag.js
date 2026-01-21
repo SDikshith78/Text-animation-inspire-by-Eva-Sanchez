@@ -2,7 +2,6 @@ export default `
 precision highp float;
 
 uniform sampler2D uMap;
-
 uniform vec2 uMouse;
 uniform vec2 uVelocity;
 uniform float uTime;
@@ -11,10 +10,12 @@ uniform float uStrength;
 uniform float uRadius;
 uniform float uFrequency;
 uniform float uSpeed;
+uniform float uGlyphCount;
 
 varying vec2 vUv;
+varying float vGlyphIndex;
 
-/* ---------------- MSDF helper ---------------- */
+/* MSDF */
 float median(float r, float g, float b) {
   return max(min(r, g), min(max(r, g), b));
 }
@@ -23,59 +24,36 @@ void main() {
 
   vec2 uv = vUv;
 
-  /* --------------------------------------------------
-     HOVER / LENS DISTANCE (HORIZONTAL)
-  -------------------------------------------------- */
+  /* -----------------------------------------
+     GLYPH → NORMALIZED POSITION
+     ----------------------------------------- */
+  float glyphCenter = (vGlyphIndex + 0.5) / uGlyphCount;
 
-  float d = abs(uv.x - uMouse.x);
+  /* distance mouse ↔ glyph */
+  float d = abs(uMouse.x - glyphCenter);
 
-  // soft lens falloff
-  float falloff = smoothstep(uRadius, 0.0, d);
+  /* hover mask */
+  float hover = smoothstep(uRadius, 0.0, d);
 
-  // HARD hover gate (this fixes the reverse behavior)
-  float hover = step(d, uRadius);
+  /* velocity boost */
+  float vel = clamp(length(uVelocity) * 6.0, 0.0, 2.0);
 
-  // non-linear lens curve
-  float lens = pow(falloff, 1.6);
+  /* -----------------------------------------
+     GLASS RIPPLE (HORIZONTAL)
+     ----------------------------------------- */
+  float wave1 = sin(uv.y * uFrequency - uTime * uSpeed);
+  float wave2 = sin(uv.y * (uFrequency * 1.6) + uTime * (uSpeed * 0.7));
 
-  /* --------------------------------------------------
-     AMPLITUDE (hover enables, velocity enhances)
-  -------------------------------------------------- */
+  float ripple = (wave1 * 0.6 + wave2 * 0.4);
 
-  float velocityBoost = clamp(abs(uVelocity.x) * 6.0, 0.0, 1.5);
+  uv.x += ripple * hover * uStrength * (1.0 + vel);
 
-  float amplitude =
-    uStrength *
-    hover *
-    (1.0 + velocityBoost);
-
-  /* --------------------------------------------------
-     RIPPLE STRUCTURE
-  -------------------------------------------------- */
-
-  float primaryWave =
-    sin(uv.y * uFrequency - uTime * uSpeed);
-
-  float microWave =
-    sin((uv.y + uv.x) * (uFrequency * 2.3) + uTime * 3.0)
-    * 0.35;
-
-  float displacement =
-    (primaryWave + microWave)
-    * amplitude
-    * lens;
-
-  // horizontal refraction only
-  uv.x += displacement;
-
-  /* --------------------------------------------------
-     MSDF TEXT
-  -------------------------------------------------- */
-
+  /* -----------------------------------------
+     MSDF SAMPLE
+     ----------------------------------------- */
   vec3 sample = texture2D(uMap, uv).rgb;
   float sigDist = median(sample.r, sample.g, sample.b) - 0.5;
-
-  float alpha = smoothstep(-0.03, 0.03, sigDist);
+  float alpha = smoothstep(-0.04, 0.04, sigDist);
 
   gl_FragColor = vec4(vec3(0.0), alpha);
 }

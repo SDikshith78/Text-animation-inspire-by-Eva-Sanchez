@@ -141,10 +141,10 @@ export default function LiquidText() {
           uVelocity: { value: velocity },
           uTime: { value: 0 },
 
-          uStrength: { value: 1.5 },
-          uRadius: { value: 0.3 },
-          uFrequency: { value: 20},
-          uSpeed: { value: 3 },
+          uStrength: { value: 0.1 },
+          uRadius: { value: 0.1 },
+          uFrequency: { value: 32},
+          uSpeed: { value: 4 },
           uGlyphCount: { value: text.length }
         }
       })
@@ -157,8 +157,8 @@ export default function LiquidText() {
       const gui = new GUI()
       gui.add(program.uniforms.uStrength, 'value', 0, 7, 0.05).name('Strength')
       gui.add(program.uniforms.uRadius, 'value', 0.1, 2, 0.01).name('Radius')
-      gui.add(program.uniforms.uFrequency, 'value', 11, 50, 1).name('Frequency')
-      gui.add(program.uniforms.uSpeed, 'value', 1, 11, 0.5).name('Speed')
+      gui.add(program.uniforms.uFrequency, 'value', 1, 50, 1).name('Frequency')
+      gui.add(program.uniforms.uSpeed, 'value', 0.5, 11, 0.5).name('Speed')
 
       /* ---------------- Resize ---------------- */
       function resize() {
