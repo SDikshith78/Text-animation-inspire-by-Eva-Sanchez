@@ -141,7 +141,7 @@ export default function LiquidText() {
           uVelocity: { value: velocity },
           uTime: { value: 0 },
 
-          uStrength: { value: 0.1 },
+          uStrength: { value: 0.17 },
           uRadius: { value: 0.1 },
           uFrequency: { value: 32},
           uSpeed: { value: 4 },
@@ -156,7 +156,7 @@ export default function LiquidText() {
       /* ---------------- GUI ---------------- */
       const gui = new GUI()
       gui.add(program.uniforms.uStrength, 'value', 0, 7, 0.05).name('Strength')
-      gui.add(program.uniforms.uRadius, 'value', 0.1, 2, 0.01).name('Radius')
+      gui.add(program.uniforms.uRadius, 'value', 0.05, 2, 0.05).name('Radius')
       gui.add(program.uniforms.uFrequency, 'value', 1, 50, 1).name('Frequency')
       gui.add(program.uniforms.uSpeed, 'value', 0.5, 11, 0.5).name('Speed')
 
