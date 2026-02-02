@@ -70,6 +70,10 @@ export default function LiquidText() {
       const indices = []
       const glyphIndex = []
 
+      const lensX = new Vec2(0.5, 0.0)
+      const lensPrevX = new Vec2(0.5, 0.0)
+
+
       let cursorX = 0
       let index = 0
       const SCALE = 0.5
@@ -137,15 +141,18 @@ export default function LiquidText() {
         transparent: true,
         uniforms: {
           uMap: { value: texture },
-          uMouse: { value: mouseLerp },
-          uVelocity: { value: velocity },
+          uMouse: { value: lensX },
+uVelocity: { value: velocity },
+
           uTime: { value: 0 },
 
           uStrength: { value: 0.17 },
-          uRadius: { value: 0.1 },
-          uFrequency: { value: 32},
-          uSpeed: { value: 4 },
-          uGlyphCount: { value: text.length }
+          uRadius: { value: 0.15 },
+          uFrequency: { value: 11},
+          uSpeed: { value: 3 },
+          uGlyphCount: { value: text.length },
+          uChromatic: { value: 0.002 },
+
         }
       })
 
@@ -159,6 +166,7 @@ export default function LiquidText() {
       gui.add(program.uniforms.uRadius, 'value', 0.05, 2, 0.05).name('Radius')
       gui.add(program.uniforms.uFrequency, 'value', 1, 50, 1).name('Frequency')
       gui.add(program.uniforms.uSpeed, 'value', 0.5, 11, 0.5).name('Speed')
+      gui.add(program.uniforms.uChromatic, 'value', 0, 0.002, 1).name('Chromatic')
 
       /* ---------------- Resize ---------------- */
       function resize() {
@@ -172,13 +180,16 @@ export default function LiquidText() {
 
       /* ---------------- Render loop ---------------- */
       function render(t) {
-        mouseLerp.lerp(mouse, 0.08)
+        // mouse smoothing (input)
+mouseLerp.lerp(mouse, 0.15)
 
-        velocity.set(
-          mouseLerp.x - mousePrev.x,
-          mouseLerp.y - mousePrev.y
-        )
-        mousePrev.copy(mouseLerp)
+// lens inertia (THIS IS THE KEY)
+lensX.x += (mouseLerp.x - lensX.x) * 0.14
+
+// velocity for later steps
+velocity.x = lensX.x - lensPrevX.x
+lensPrevX.x = lensX.x
+
 
         program.uniforms.uTime.value = t * 0.001
 
