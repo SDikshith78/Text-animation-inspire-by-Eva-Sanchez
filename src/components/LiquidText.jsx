@@ -19,11 +19,10 @@ export default function LiquidText() {
   const initialized = useRef(false)
 
   useEffect(() => {
-    // --- React 18 safety ---
     if (initialized.current) return
     initialized.current = true
 
-    /* ---------------- Renderer ---------------- */
+    /* ---------- Renderer ---------- */
     const renderer = new Renderer({ alpha: true })
     const gl = renderer.gl
     gl.clearColor(0, 0, 0, 0)
@@ -32,26 +31,29 @@ export default function LiquidText() {
 
     containerRef.current.appendChild(gl.canvas)
 
-    /* ---------------- Camera ---------------- */
+    /* ---------- Camera ---------- */
     const camera = new Camera(gl)
     camera.position.z = 1.6
 
-    /* ---------------- Scene ---------------- */
     const scene = new Transform()
 
-    /* ---------------- Mouse ---------------- */
+    /* ---------- Mouse ---------- */
     const mouse = new Vec2(0.5, 0.5)
     const mouseLerp = new Vec2(0.5, 0.5)
-    const mousePrev = new Vec2(0.5, 0.5)
+
+    // fake mouse / lens
+    const lens = new Vec2(0.5, 0.5)
+    const lensPrev = new Vec2(0.5, 0.5)
     const velocity = new Vec2(0, 0)
 
     function onMouseMove(e) {
       mouse.x = e.clientX / window.innerWidth
       mouse.y = 1.0 - e.clientY / window.innerHeight
     }
+
     window.addEventListener('mousemove', onMouseMove)
 
-    /* ---------------- Load MSDF assets ---------------- */
+    /* ---------- Load MSDF ---------- */
     Promise.all([
       fetch('/fonts/Inter-Medium.json').then(r => r.json()),
       new Promise(resolve => {
@@ -69,10 +71,6 @@ export default function LiquidText() {
       const uvs = []
       const indices = []
       const glyphIndex = []
-
-      const lensX = new Vec2(0.5, 0.0)
-      const lensPrevX = new Vec2(0.5, 0.0)
-
 
       let cursorX = 0
       let index = 0
@@ -108,16 +106,13 @@ export default function LiquidText() {
         const h = font.atlas.height
 
         uvs.push(
-          ab.left / w,  ab.bottom / h,
+          ab.left / w, ab.bottom / h,
           ab.right / w, ab.bottom / h,
           ab.right / w, ab.top / h,
-          ab.left / w,  ab.top / h
+          ab.left / w, ab.top / h
         )
 
-        // --- glyph index per vertex ---
-        for (let v = 0; v < 4; v++) {
-          glyphIndex.push(i)
-        }
+        for (let v = 0; v < 4; v++) glyphIndex.push(i)
 
         indices.push(
           index, index + 1, index + 2,
@@ -141,24 +136,17 @@ export default function LiquidText() {
         transparent: true,
         uniforms: {
           uMap: { value: texture },
-          uMouse: { value: lensX },
-uVelocity: { value: velocity },
-
+          uMouse: { value: lens }, // 👈 shader uses lens
+          uVelocity: { value: velocity },
           uTime: { value: 0 },
-
-          uStrength: { value: 0.17 },
-          uRadius: { value: 0.15 },
-          uFrequency: { value: 11},
+          uStrength: { value: 0.1 },
+          uRadius: { value: 0.1 },
+          uFrequency: { value: 11 },
           uSpeed: { value: 3 },
           uGlyphCount: { value: text.length },
-          uChromatic: { value: 0.002 },
-
+          uChromatic: { value: 0.002 }
         }
       })
-
-      const mesh = new Mesh(gl, { geometry, program })
-      mesh.position.x = -cursorX * SCALE * 0.5
-      scene.addChild(mesh)
 
       /* ---------------- GUI ---------------- */
       const gui = new GUI()
@@ -166,46 +154,48 @@ uVelocity: { value: velocity },
       gui.add(program.uniforms.uRadius, 'value', 0.05, 2, 0.05).name('Radius')
       gui.add(program.uniforms.uFrequency, 'value', 1, 50, 1).name('Frequency')
       gui.add(program.uniforms.uSpeed, 'value', 0.5, 11, 0.5).name('Speed')
-      gui.add(program.uniforms.uChromatic, 'value', 0, 0.002, 1).name('Chromatic')
+      gui.add(program.uniforms.uChromatic, 'value', 0, 0.05, 5).name('Chromatic')
 
-      /* ---------------- Resize ---------------- */
+      const mesh = new Mesh(gl, { geometry, program })
+      mesh.position.x = -cursorX * SCALE * 0.5
+      scene.addChild(mesh)
+
+      /* ---------- Resize ---------- */
       function resize() {
         renderer.setSize(window.innerWidth, window.innerHeight)
         camera.perspective({
           aspect: gl.canvas.width / gl.canvas.height
         })
       }
+
       window.addEventListener('resize', resize)
       resize()
 
-      /* ---------------- Render loop ---------------- */
+      /* ---------- Render ---------- */
       function render(t) {
-        // mouse smoothing (input)
-mouseLerp.lerp(mouse, 0.15)
+        // smooth real mouse
+        mouseLerp.lerp(mouse, 0.15)
 
-// lens inertia (THIS IS THE KEY)
-lensX.x += (mouseLerp.x - lensX.x) * 0.14
+        // lens tween (fake mouse)
+        lens.lerp(mouseLerp, 0.12)
 
-// velocity for later steps
-velocity.x = lensX.x - lensPrevX.x
-lensPrevX.x = lensX.x
+        // velocity from lens movement
+        velocity.set(
+          lens.x - lensPrev.x,
+          lens.y - lensPrev.y
+        )
 
+        lensPrev.copy(lens)
 
         program.uniforms.uTime.value = t * 0.001
 
         renderer.render({ scene, camera })
         requestAnimationFrame(render)
       }
-      requestAnimationFrame(render)
 
-      /* ---------------- Cleanup ---------------- */
-      return () => {
-        gui.destroy()
-        window.removeEventListener('resize', resize)
-        window.removeEventListener('mousemove', onMouseMove)
-        if (gl.canvas.parentNode) gl.canvas.remove()
-      }
+      requestAnimationFrame(render)
     })
+
   }, [])
 
   return (

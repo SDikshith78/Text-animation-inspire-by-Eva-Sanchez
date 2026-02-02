@@ -47,6 +47,11 @@ void main() {
 float prog = 1.0 - (d / uRadius);
 prog = clamp(prog, 0.0, 1.0);
 
+// only allow ripple on forward side
+prog *= smoothstep(-0.02, 0.02, mx);
+
+
+
 // hard cutoff to prevent ghost ripple
 if (prog < 0.03) prog = 0.0;
 
@@ -80,9 +85,11 @@ if (prog > 0.0) {
     * uStrength;
 }
 
+float velX = clamp(uVelocity.x * 10.0, -1.0, 1.0);
+float velInfluence = velX * prog;
 
-  float velX = clamp(uVelocity.x * 10.0, -1.0, 1.0);
-uv.x += rippleH * (1.0 + velX * 0.7);
+uv.x += rippleH * (1.0 + velInfluence * 0.7);
+
 
 
   /* -------- MSDF sampling -------- */
