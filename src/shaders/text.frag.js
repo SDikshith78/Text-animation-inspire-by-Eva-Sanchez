@@ -13,6 +13,8 @@ uniform float uRadius;
 uniform float uFrequency;
 uniform float uSpeed;
 uniform float uGlyphCount;
+uniform float uPhase;
+
 
 varying vec2 vUv;
 varying float vGlyphIndex;
@@ -47,23 +49,9 @@ void main() {
 float prog = 1.0 - (d / uRadius);
 prog = clamp(prog, 0.0, 1.0);
 
-// only allow ripple on forward side
-prog *= smoothstep(-0.02, 0.02, mx);
-
-
-
-// hard cutoff to prevent ghost ripple
-if (prog < 0.03) prog = 0.0;
-
-// glass density
-prog = pow(prog, 2.4);
-
-
-// compensate wide glyphs (D, O, S)
-float centerBias = smoothstep(0.0, 0.25, prog);
-prog *= mix(1.4, 1.0, centerBias);
-
-
+// sharpen falloff to isolate letters
+prog = pow(prog, 2.2);
+prog = max(0.0, prog - 0.15);
 
 
 
@@ -76,14 +64,19 @@ prog *= mix(1.4, 1.0, centerBias);
 if (prog > 0.0) {
   rippleH =
     ripple(
-      vUv.x * uFrequency,
-      uTime * uSpeed,
-      prog,
-      -0.36
-    )
+  vUv.x * uFrequency,
+  uPhase,
+  prog,
+  -0.36
+)
+
     * (0.12 * prog)
     * uStrength;
+    
+  // float move = clamp(abs(uVelocity.x) * 25.0, 0.0, 1.0);
+  // rippleH *= move;
 }
+
 
 float velX = clamp(uVelocity.x * 10.0, -1.0, 1.0);
 float velInfluence = velX * prog;
