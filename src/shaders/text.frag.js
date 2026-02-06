@@ -51,7 +51,7 @@ prog = clamp(prog, 0.0, 1.0);
 
 // sharpen falloff to isolate letters
 prog = pow(prog, 2.2);
-prog = max(0.0, prog - 0.15);
+prog = max(0.0, prog - 0.11);
 
 
 
@@ -61,7 +61,8 @@ prog = max(0.0, prog - 0.15);
   ------------------------------------------ */
   float rippleH = 0.0;
 
-if (prog > 0.0) {
+if (prog > 0.14) {
+
   rippleH =
     ripple(
   vUv.x * uFrequency,

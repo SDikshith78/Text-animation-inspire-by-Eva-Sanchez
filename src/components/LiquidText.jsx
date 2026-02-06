@@ -18,6 +18,7 @@ export default function LiquidText() {
   const containerRef = useRef(null);
   const initialized = useRef(false);
 
+
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
@@ -171,6 +172,8 @@ export default function LiquidText() {
       resize();
 
       /* ---------- Render ---------- */
+  let prevLetterIndex = -1;
+
       function render(t) {
         // smooth real mouse
         mouseLerp.lerp(mouse, 0.23);
@@ -179,14 +182,30 @@ export default function LiquidText() {
         lens.lerp(mouseLerp, 0.45);
 
         // velocity from lens movement
-        velocity.x += (lens.x - lensPrev.x - velocity.x) * 0.35;
+        velocity.x += (lens.x - lensPrev.x - velocity.x) * 0.55;
         velocity.y += (lens.y - lensPrev.y - velocity.y) * 0.35;
 
-        let v = Math.max(-0.023, Math.min(0.023, velocity.x));
+        const letterIndex = Math.floor(lens.x * text.length);
 
+if (letterIndex !== prevLetterIndex) {
+  program.uniforms.uPhase.value = 0.0;
+
+  velocity.x = 0.0;
+  velocity.y = 0.0;
+
+  prevLetterIndex = letterIndex;
+}
+
+
+        let v = Math.max(-0.02, Math.min(0.02, velocity.x));
 
         if (Math.abs(v) > 0.0001) {
           program.uniforms.uPhase.value += v * 45.0;
+
+          if (program.uniforms.uPhase.value > 1000.0)
+            program.uniforms.uPhase.value -= 1000.0;
+          if (program.uniforms.uPhase.value < -1000.0)
+            program.uniforms.uPhase.value += 1000.0;
         }
 
         lensPrev.copy(lens);
