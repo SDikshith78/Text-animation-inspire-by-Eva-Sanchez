@@ -136,7 +136,7 @@ export default function LiquidText() {
           uTime: { value: 0 },
           uStrength: { value: 0.23 },
           uRadius: { value: 0.07 },
-          uFrequency: { value: 15 },
+          uFrequency: { value: 13 },
           uSpeed: { value: 3 },
           uGlyphCount: { value: text.length },
           uChromatic: { value: 0.002 },
@@ -193,8 +193,11 @@ if (letterIndex !== prevLetterIndex) {
   velocity.x = 0.0;
   velocity.y = 0.0;
 
+  lensPrev.copy(lens); // reset movement history
+
   prevLetterIndex = letterIndex;
 }
+
 
 
         let v = Math.max(-0.02, Math.min(0.02, velocity.x));

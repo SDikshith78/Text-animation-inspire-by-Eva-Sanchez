@@ -41,6 +41,8 @@ void main() {
   float mx = uMouse.x - letterCenterX;
   float d = abs(mx) * 0.75;
 
+  
+
 
   /* -------- Hover gating -------- */
   float hover = smoothstep(uRadius, 0.0, d);
@@ -61,7 +63,7 @@ prog = max(0.0, prog - 0.11);
   ------------------------------------------ */
   float rippleH = 0.0;
 
-if (prog > 0.14) {
+if (prog > 0.23) {
 
   rippleH =
     ripple(
@@ -83,6 +85,8 @@ float velX = clamp(uVelocity.x * 10.0, -1.0, 1.0);
 float velInfluence = velX * prog;
 
 uv.x += rippleH * (1.0 + velInfluence * 0.7);
+uv.y += rippleH * 0.07 * prog;
+
 
 
 
@@ -91,14 +95,22 @@ uv.x += rippleH * (1.0 + velInfluence * 0.7);
 float ca = uChromatic * prog;
 
 // sample RGB separately
-float r = texture2D(uMap, uv + vec2(ca, 0.0)).r;
-float g = texture2D(uMap, uv).g;
-float b = texture2D(uMap, uv - vec2(ca, 0.0)).b;
+vec2 lensOffset = rippleH * 0.01 * prog * vec2(1.0, 0.5);
+
+float r = texture2D(uMap, uv + lensOffset + vec2(ca, 0.0)).r;
+float g = texture2D(uMap, uv + lensOffset).g;
+float b = texture2D(uMap, uv + lensOffset - vec2(ca, 0.0)).b;
+
 
 float sigDist = median(r, g, b) - 0.5;
 float alpha = smoothstep(-0.02, 0.02, sigDist);
 
-gl_FragColor = vec4(vec3(0.0), alpha);
+// soft glass edge light
+float edge = smoothstep(0.0, 0.02, abs(sigDist));
+vec3 color = vec3(edge * 0.15);
+
+gl_FragColor = vec4(color, alpha);
+
 
 }
 
